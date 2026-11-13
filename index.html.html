@@ -1,0 +1,1927 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Métricas de Contratos</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <!-- SheetJS (XLSX) CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-body: #F4F6F9;
+            --bg-card: #FFFFFF;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+            --btl-blue-dark: #002347;
+            --btl-blue-primary: #003B73;
+            --btl-blue-light: #0066CC;
+            --btl-blue-subtle: #EBF3FA;
+            --accent-green: #10B981;
+            --accent-green-bg: #E6F4EA;
+            --accent-amber: #F59E0B;
+            --accent-amber-bg: #FEF3C7;
+            --accent-red: #EF4444;
+            --accent-red-bg: #FEE2E2;
+            --border-color: #CBD5E1;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --card-hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+            --border-radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            padding: 24px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* HEADER & BRANDING */
+        header {
+            background: linear-gradient(135deg, var(--btl-blue-dark) 0%, var(--btl-blue-primary) 100%);
+            color: white;
+            padding: 24px 32px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 25px -5px rgba(0, 35, 71, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-title h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 2px;
+        }
+
+        .header-title p {
+            font-size: 13.5px;
+            color: #94A3B8;
+            font-weight: 400;
+        }
+
+        .header-meta {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+
+        .period-badge {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 12.5px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #FFFFFF;
+        }
+
+        /* UPLOAD BANNER CARD */
+        .upload-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: var(--border-radius);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .upload-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .upload-icon-bg {
+            width: 42px;
+            height: 42px;
+            background: var(--btl-blue-subtle);
+            color: var(--btl-blue-primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .upload-text h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--btl-blue-dark);
+        }
+
+        .upload-text p {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .upload-btn-label {
+            background: var(--btl-blue-primary);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .upload-btn-label:hover {
+            background: var(--btl-blue-dark);
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        /* FILTER BAR DESIGN */
+        .filter-container {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 20px 24px 16px 24px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #E2E8F0;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .filter-sections-grid {
+            display: flex;
+            align-items: flex-end;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group-block {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            background: #F8FAFC;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #E2E8F0;
+        }
+
+        .filter-group-title {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--btl-blue-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .filter-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .filter-field label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .filter-input, .filter-select {
+            height: 38px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #CBD5E1;
+            background-color: #FFFFFF;
+            color: #0F172A;
+            font-size: 13px;
+            font-weight: 400;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .filter-input {
+            min-width: 140px;
+        }
+
+        .filter-select {
+            min-width: 170px;
+            cursor: pointer;
+        }
+
+        .filter-input:focus, .filter-select:focus {
+            border-color: var(--btl-blue-light);
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+        }
+
+        .btn-limpar {
+            height: 38px;
+            background: #FFFFFF;
+            color: var(--btl-blue-primary);
+            border: 1px solid #CBD5E1;
+            padding: 0 18px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            align-self: flex-end;
+        }
+
+        .btn-limpar:hover {
+            background: #F8FAFC;
+            border-color: var(--btl-blue-primary);
+        }
+
+        .filter-footer-info {
+            text-align: right;
+            font-size: 12.5px;
+            color: #64748B;
+            font-weight: 400;
+        }
+
+        .filter-footer-info strong {
+            color: var(--btl-blue-dark);
+            font-weight: 700;
+        }
+
+        /* KPI CARDS GRID */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 20px 24px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #E2E8F0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--btl-blue-light);
+        }
+
+        .kpi-card.success::before { background: var(--accent-green); }
+        .kpi-card.warning::before { background: var(--accent-amber); }
+        .kpi-card.danger::before { background: var(--accent-red); }
+
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .kpi-title {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            background: var(--btl-blue-subtle);
+            color: var(--btl-blue-primary);
+        }
+
+        .kpi-value-container {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .kpi-value {
+            font-size: 30px;
+            font-weight: 800;
+            color: var(--btl-blue-dark);
+            letter-spacing: -0.8px;
+            line-height: 1.1;
+        }
+
+        .kpi-count-badge {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-muted);
+            background: #F1F5F9;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .kpi-subtext {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.35;
+        }
+
+        /* SECTION HEADERS */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 8px;
+            margin-bottom: -8px;
+        }
+
+        .section-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--btl-blue-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* GRIDS & CARDS */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 22px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #E2E8F0;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card-title {
+            font-size: 14.5px;
+            font-weight: 700;
+            color: var(--btl-blue-dark);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #E2E8F0;
+            padding-bottom: 10px;
+        }
+
+        .card-title .subtitle {
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            min-height: 270px;
+        }
+
+        /* FUNNEL FLOW & CARDS */
+        .funnel-step {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: #F8FAFC;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border-left: 4px solid var(--btl-blue-primary);
+        }
+
+        .funnel-step.step-success { border-left-color: var(--accent-green); background: var(--accent-green-bg); }
+        .funnel-step.step-warning { border-left-color: var(--accent-amber); background: var(--accent-amber-bg); }
+        .funnel-step.step-danger { border-left-color: var(--accent-red); background: #FFF5F5; }
+
+        .funnel-label {
+            font-size: 12.5px;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .funnel-value {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--btl-blue-dark);
+        }
+
+        /* INTERPRETATION BOX */
+        .interpretation-box {
+            background: var(--btl-blue-subtle);
+            border-left: 4px solid var(--btl-blue-primary);
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            font-size: 12.5px;
+            color: var(--btl-blue-dark);
+            line-height: 1.5;
+        }
+
+        .warning-box {
+            background: var(--accent-amber-bg);
+            border-left: 4px solid var(--accent-amber);
+            color: #92400E;
+        }
+
+        .danger-box {
+            background: var(--accent-red-bg);
+            border-left: 4px solid var(--accent-red);
+            color: #991B1B;
+        }
+
+        /* TABLES */
+        .custom-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12.5px;
+        }
+
+        .custom-table th {
+            background: #F8FAFC;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-align: left;
+            padding: 8px 12px;
+            border-bottom: 2px solid #E2E8F0;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+
+        .custom-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #E2E8F0;
+        }
+
+        .tag {
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .tag-success { background: var(--accent-green-bg); color: var(--accent-green); }
+        .tag-warning { background: var(--accent-amber-bg); color: #B45309; }
+        .tag-danger { background: var(--accent-red-bg); color: var(--accent-red); }
+        .tag-neutral { background: #F1F5F9; color: #64748B; }
+
+        /* HIGHLIGHT CARD FOR TOP REASON */
+        .highlight-card {
+            background: linear-gradient(135deg, #FFF5F5 0%, #FED7D7 100%);
+            border: 1px solid #FEB2B2;
+            border-radius: var(--border-radius);
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .highlight-card .title {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: #C53030;
+            text-transform: uppercase;
+        }
+
+        .highlight-card .main-stat {
+            font-size: 18px;
+            font-weight: 800;
+            color: #9B2C2C;
+        }
+
+        .highlight-card .subtext {
+            font-size: 12px;
+            color: #742A2A;
+        }
+
+        /* EXECUTIVE INSIGHTS GRID */
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .insight-card {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .insight-num {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--btl-blue-light);
+            text-transform: uppercase;
+        }
+
+        .insight-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--btl-blue-dark);
+        }
+
+        .insight-body {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.45;
+        }
+
+        /* ACTION MATRIX */
+        .action-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            background: #F8FAFC;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 4px solid var(--btl-blue-light);
+            margin-bottom: 8px;
+        }
+
+        .action-problem {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--btl-blue-dark);
+        }
+
+        .action-solution {
+            font-size: 12.5px;
+            color: var(--text-main);
+        }
+
+        footer {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            padding: 18px 0;
+            border-top: 1px solid #E2E8F0;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- HEADER & BRANDING -->
+    <header>
+        <div class="header-brand">
+            <div class="header-title">
+                <h1>Painel de Métricas de Contratos</h1>
+            </div>
+        </div>
+        <div class="header-meta">
+            <div class="period-badge">
+                <i class="fa-regular fa-calendar-days"></i>
+                <span id="period-display">AGUARDANDO PLANILHA BASE</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- UPLOAD BANNER FOR PERIODIC UPDATES -->
+    <div class="upload-card">
+        <div class="upload-info">
+            <div class="upload-icon-bg">
+                <i class="fa-solid fa-file-excel"></i>
+            </div>
+            <div class="upload-text">
+                <h3>Atualizar Dados do Dashboard via Planilha Excel (.xlsx)</h3>
+                <p>Envie a nova planilha preenchida para recalcular automaticamente os indicadores e relatórios.</p>
+            </div>
+        </div>
+        <div>
+            <label for="file-input" class="upload-btn-label">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>Carregar Nova Planilha</span>
+            </label>
+            <input type="file" id="file-input" accept=".xlsx, .xls" onchange="handleFileUpload(event)">
+        </div>
+    </div>
+
+    <!-- FILTER BAR (1ª PARTE: TIPO DE FILTRO, DATA, NÚMERO DE ANÁLISES, MOTIVO DA REPROVAÇÃO) -->
+    <div class="filter-container">
+        <div class="filter-sections-grid">
+            
+            <!-- DATA DE ABERTURA DO TICKET (COLUNA G - CRIADO) -->
+            <div class="filter-group-block">
+                <div>
+                    <div class="filter-group-title"><i class="fa-regular fa-calendar"></i> DATA DE ABERTURA DO TICKET</div>
+                    <div style="display: flex; gap: 8px;">
+                        <div class="filter-field">
+                            <label for="filter-date-start">Início</label>
+                            <input type="date" id="filter-date-start" class="filter-input" value="" onchange="onManualDateChange()">
+                        </div>
+                        <div class="filter-field">
+                            <label for="filter-date-end">Fim</label>
+                            <input type="date" id="filter-date-end" class="filter-input" value="" onchange="onManualDateChange()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MÊS FECHADO -->
+            <div class="filter-field">
+                <label for="filter-month">Mês fechado</label>
+                <select id="filter-month" class="filter-select" onchange="onMonthFilterChange()">
+                    <option value="ALL">Todos</option>
+                </select>
+            </div>
+
+            <!-- NÚMERO DE ANÁLISES -->
+            <div class="filter-field">
+                <label for="filter-rounds">Número de análises</label>
+                <select id="filter-rounds" class="filter-select" onchange="applyFilters()">
+                    <option value="ALL">Todas</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4+</option>
+                </select>
+            </div>
+            
+            <!-- MOTIVO DA REPROVAÇÃO (COLUNA M) -->
+            <div class="filter-field">
+                <label for="filter-reason">Motivo da reprovação</label>
+                <select id="filter-reason" class="filter-select" onchange="applyFilters()">
+                    <option value="ALL">Todos</option>
+                    <option value="Documento pendente">Documento pendente</option>
+                    <option value="Contrato pendente">Contrato pendente</option>
+                    <option value="Comprovantes de pagamento ou autorização pendente">Comprovantes de pagamento ou autorização pendente</option>
+                    <option value="Cadastro desatualizado">Cadastro desatualizado</option>
+                    <option value="Autorização de faturamento pendente (financiamento)">Autorização de faturamento pendente (financiamento)</option>
+                    <option value="Contrato incorreto">Contrato incorreto</option>
+                </select>
+            </div>
+
+            <button class="btn-limpar" onclick="resetFilters()">Limpar filtros</button>
+        </div>
+        
+        <div class="filter-footer-info">
+            <strong id="filtered-tickets-count">0</strong> tickets no recorte atual · fonte: <span id="source-file-name">Nenhuma planilha carregada</span>
+        </div>
+    </div>
+
+    <!-- MAIN KPIS SECTION -->
+    <div class="kpi-grid">
+        <!-- KPI 1 -->
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <span class="kpi-title">Tickets abertos</span>
+                <div class="kpi-icon"><i class="fa-solid fa-ticket"></i></div>
+            </div>
+            <div class="kpi-value-container">
+                <div class="kpi-value" id="kpi-tickets">0</div>
+            </div>
+            <div class="kpi-subtext">Demanda total no período selecionado</div>
+        </div>
+
+        <!-- KPI 2 -->
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <span class="kpi-title">Análises realizadas</span>
+                <div class="kpi-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+            </div>
+            <div class="kpi-value-container">
+                <div class="kpi-value" id="kpi-analises">0</div>
+            </div>
+            <div class="kpi-subtext">Soma das rodadas de análise efetuadas no período selecionado</div>
+        </div>
+
+        <!-- KPI 3 -->
+        <div class="kpi-card warning">
+            <div class="kpi-header">
+                <span class="kpi-title">Média de análises por ticket</span>
+                <div class="kpi-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
+            </div>
+            <div class="kpi-value-container">
+                <div class="kpi-value" id="kpi-media">0.00</div>
+            </div>
+            <div class="kpi-subtext">Nível de retrabalho médio do processo no período selecionado</div>
+        </div>
+
+        <!-- KPI 4 -->
+        <div class="kpi-card success">
+            <div class="kpi-header">
+                <span class="kpi-title">Aprovação em 1ª análise</span>
+                <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+            <div class="kpi-value-container">
+                <div class="kpi-value" id="kpi-aprov1">0.0%</div>
+                <div class="kpi-count-badge" id="kpi-aprov1-count">(0 tickets)</div>
+            </div>
+            <div class="kpi-subtext">Tickets aprovados na 1ª análise (coluna H = 1)</div>
+        </div>
+
+        <!-- KPI 5 -->
+        <div class="kpi-card danger">
+            <div class="kpi-header">
+                <span class="kpi-title">Pedidos Devolvidos</span>
+                <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            </div>
+            <div class="kpi-value-container">
+                <div class="kpi-value" id="kpi-retrabalho">0.0%</div>
+                <div class="kpi-count-badge" id="kpi-retrabalho-count">(0 tickets)</div>
+            </div>
+            <div class="kpi-subtext">Tickets devolvidos com 2, 3, 4, 5 ou mais análises (coluna H ≥ 2)</div>
+        </div>
+    </div>
+
+    <!-- QUADRO: MOTIVOS DE DEVOLUÇÃO (LINHA INTERMEDIÁRIA) -->
+    <div>
+        <div class="kpi-card danger">
+            <div class="kpi-header" style="margin-bottom: 10px;">
+                <span class="kpi-title">Motivos de Devolução</span>
+                <div class="kpi-icon"><i class="fa-solid fa-list-ul"></i></div>
+            </div>
+            <div id="kpi-motivos-devolucao-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 8px 24px; font-size: 12.5px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #F1F5F9; padding-bottom:4px; gap:8px;">
+                    <span style="color:var(--text-main); font-weight:500;">Contrato pendente</span>
+                    <span class="tag tag-neutral">0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #F1F5F9; padding-bottom:4px; gap:8px;">
+                    <span style="color:var(--text-main); font-weight:500;">Documento pendente</span>
+                    <span class="tag tag-neutral">0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #F1F5F9; padding-bottom:4px; gap:8px;">
+                    <span style="color:var(--text-main); font-weight:500;">Contrato incorreto</span>
+                    <span class="tag tag-neutral">0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #F1F5F9; padding-bottom:4px; gap:8px;">
+                    <span style="color:var(--text-main); font-weight:500;">Comprovantes de pagamento ou autorização pendente</span>
+                    <span class="tag tag-neutral">0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #F1F5F9; padding-bottom:4px; gap:8px;">
+                    <span style="color:var(--text-main); font-weight:500;">Autorização de faturamento pendente (financiamento)</span>
+                    <span class="tag tag-neutral">0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #F1F5F9; padding-bottom:4px; gap:8px;">
+                    <span style="color:var(--text-main); font-weight:500;">Cadastro desatualizado</span>
+                    <span class="tag tag-neutral">0</span>
+                </div>
+            </div>
+            <div class="kpi-subtext" style="margin-top: 10px;" id="kpi-motivos-devolucao-sub">0 de 0 pedidos devolvidos (1 motivo principal por pedido conforme gravidade)</div>
+        </div>
+    </div>
+
+    <!-- TEMPOS MÉDIOS DO PROCESSO -->
+    <div class="grid-2">
+        <!-- KPI TEMPO 1 -->
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <span class="kpi-title">Tempo Médio Abertura de Ticket x 1ª Análise</span>
+                <div class="kpi-icon"><i class="fa-regular fa-clock"></i></div>
+            </div>
+            <div class="kpi-value-container">
+                <div class="kpi-value" id="kpi-tempo-1a">0.00 dias</div>
+            </div>
+            <div class="kpi-subtext">Média da coluna K (Dias Ticket - 1ª Análise) no período selecionado</div>
+        </div>
+
+        <!-- KPI TEMPO 2 -->
+        <div class="kpi-card warning">
+            <div class="kpi-header">
+                <span class="kpi-title">Tempo Médio de Ajuste do Pedido</span>
+                <div class="kpi-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+            </div>
+            <div class="kpi-value-container">
+                <div class="kpi-value" id="kpi-tempo-ajuste">0.00 dias</div>
+            </div>
+            <div class="kpi-subtext">Tempo médio entre Data da 1ª Análise (coluna I) e Data de Faturamento (coluna J)</div>
+        </div>
+    </div>
+
+    <!-- ANÁLISE ESPECÍFICA DE FECHAMENTO -->
+    <div class="section-header">
+        <div class="section-title">
+            <i class="fa-solid fa-calendar-day"></i>
+            Fluxo de Tickets — Fechamento
+        </div>
+    </div>
+
+    <!-- THREE HIGHLIGHT CARDS SIDE BY SIDE IN A 3-COLUMN GRID -->
+    <div class="grid-3">
+        <!-- CARD 1: TICKETS ABERTOS NO FECHAMENTO -->
+        <div class="card">
+            <div class="card-title">
+                <span><i class="fa-solid fa-inbox"></i> Demanda de Fechamento</span>
+                <span class="subtitle" id="closing-sub-1">Último dia útil do mês</span>
+            </div>
+            <div class="funnel-step step-danger">
+                <div>
+                    <span class="funnel-label" style="display:block; font-size:12px; color:var(--text-muted);">Tickets abertos no fechamento</span>
+                    <span class="funnel-value" id="closing-open-val" style="font-size:24px; font-weight:800; color:#991B1B;">0 tickets (0.0%)</span>
+                </div>
+            </div>
+            <div id="closing-open-monthly" class="interpretation-box danger-box">
+                Nenhum ticket aberto no período selecionado.
+            </div>
+        </div>
+
+        <!-- CARD 2: PEDIDOS DEVOLVIDOS NO FECHAMENTO -->
+        <div class="card">
+            <div class="card-title">
+                <span><i class="fa-solid fa-rotate-left"></i> Pedidos Devolvidos no Fechamento</span>
+                <span class="subtitle" id="closing-sub-2">2 ou mais análises</span>
+            </div>
+            <div class="funnel-step step-warning">
+                <div>
+                    <span class="funnel-label" style="display:block; font-size:12px; color:var(--text-muted);">Tickets do fechamento com 2 ou + análises</span>
+                    <span class="funnel-value" id="closing-released-val" style="font-size:24px; font-weight:800; color:#92400E;">0 tickets (0.0%)</span>
+                </div>
+            </div>
+            <div id="closing-returned-monthly" class="interpretation-box warning-box">
+                Nenhum ticket aberto no período selecionado.
+            </div>
+        </div>
+
+        <!-- CARD 3: PEDIDOS FATURADOS NO FECHAMENTO -->
+        <div class="card">
+            <div class="card-title">
+                <span><i class="fa-solid fa-file-invoice-dollar"></i> Pedidos Faturados no Fechamento</span>
+                <span class="subtitle" id="closing-sub-3">Último dia útil do mês</span>
+            </div>
+            <div class="funnel-step" style="border-left-color: var(--btl-blue-primary); background: var(--btl-blue-subtle);">
+                <div>
+                    <span class="funnel-label" style="display:block; font-size:12px; color:var(--text-muted);">Tickets do período faturados no fechamento</span>
+                    <span class="funnel-value" id="closing-analyses-val" style="font-size:24px; font-weight:800; color:var(--btl-blue-dark);">0 tickets (0.0%)</span>
+                </div>
+            </div>
+            <div id="closing-invoiced-monthly" class="interpretation-box">
+                Nenhum ticket aberto no período selecionado.
+            </div>
+        </div>
+    </div>
+
+    <!-- RANKING TOP 10 MAIOR TEMPO (COLUNA L) -->
+    <div class="section-header">
+        <div class="section-title">
+            <i class="fa-solid fa-ranking-star"></i>
+            Top 10 Pedidos com Maior Tempo entre Abertura e Faturamento
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">
+            <span><i class="fa-solid fa-table-list"></i> Ranking Detalhado</span>
+            <span class="subtitle">10 maiores tempos aguardando ajuste no recorte atual</span>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Ticket</th>
+                        <th>Pedido</th>
+                        <th>Vendedor</th>
+                        <th>Data de Abertura</th>
+                        <th>Data da 1ª Análise</th>
+                        <th>Data de Faturamento</th>
+                        <th>Tempo Aguardando Ajuste</th>
+                        <th>Motivo</th>
+                    </tr>
+                </thead>
+                <tbody id="top10-ranking-tbody">
+                    <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Nenhum pedido encontrado. Carregue a planilha Excel acima para visualizar os dados.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- RANKING DE PEDIDOS ABERTOS POR VENDEDOR (COLUNA E) -->
+    <div class="section-header">
+        <div class="section-title">
+            <i class="fa-solid fa-user-tie"></i>
+            Ranking de Pedidos Abertos por Vendedor
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">
+            <span><i class="fa-solid fa-users-viewfinder"></i> Desempenho por Vendedor</span>
+            <span class="subtitle" id="vendor-ranking-subtitle">0 vendedores · 0 tickets no recorte atual</span>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Vendedor</th>
+                        <th>Tickets Abertos</th>
+                        <th>Abertos Fora do Fechamento (%)</th>
+                        <th>Abertos no Fechamento (%)</th>
+                        <th>Mais de 1 Análise (%)</th>
+                        <th>Tempo Médio de Ajuste</th>
+                    </tr>
+                </thead>
+                <tbody id="vendor-ranking-tbody">
+                    <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Nenhum pedido encontrado. Carregue a planilha Excel acima para visualizar os dados.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <footer>
+        <p><strong>BTL - Painel de Métricas de Contratos</strong> | Elaborado por Osiany Coutinho</p>
+    </footer>
+
+</div>
+
+<!-- JAVASCRIPT LOGIC & FULL DATA ENGINE -->
+<script>
+    // RAW DATASET EMBEDDED FROM EXCEL (CONSOLIDADO)
+    let rawData = [];
+
+    // Ordem de gravidade (1º mais grave ao 6º menos grave)
+    const ALL_REASON_CATEGORIES = [
+        'Contrato pendente',
+        'Documento pendente',
+        'Contrato incorreto',
+        'Comprovantes de pagamento ou autorização pendente',
+        'Autorização de faturamento pendente (financiamento)',
+        'Cadastro desatualizado'
+    ];
+
+    let chartDist, chartMotivos;
+
+    // Normalize helper (removes accents & lowercases)
+    function normStr(s) {
+        return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    }
+
+    // Classify individual comment token into standardized categories
+    function classifyReasonToken(token) {
+        const t = normStr(token);
+        if (!t || t === 'nan' || t === 'none' || t === '-') return null;
+        if (t.includes('financiamento') || t.includes('autorizacao de faturamento')) {
+            return 'Autorização de faturamento pendente (financiamento)';
+        }
+        if (t.includes('comprovante')) {
+            return 'Comprovantes de pagamento ou autorização pendente';
+        }
+        if (t.includes('cadastro')) {
+            return 'Cadastro desatualizado';
+        }
+        if (t.includes('contrato incorreto')) {
+            return 'Contrato incorreto';
+        }
+        if (t.includes('contrato pendente')) {
+            return 'Contrato pendente';
+        }
+        if (t.includes('documento')) {
+            return 'Documento pendente';
+        }
+        return token.trim();
+    }
+
+    // Parse comma/slash separated comments from Column M into an array of categories
+    function parseReasonsFromComment(commentStr) {
+        if (!commentStr) return [];
+        const raw = String(commentStr).trim();
+        if (!raw || raw === '-' || raw === 'nan' || raw === 'None') return [];
+        const parts = raw.split(/[,/]/).map(p => p.trim()).filter(Boolean);
+        const result = [];
+        parts.forEach(p => {
+            const cat = classifyReasonToken(p);
+            if (cat) result.push(cat);
+        });
+        return result;
+    }
+
+    // Safe Excel date converter (handles Date objects, Excel serial numbers, YYYY-MM-DD, DD/MM/YYYY)
+    function parseExcelDateToISO(val) {
+        if (val === null || val === undefined || val === '' || val === '-') return '';
+        if (val instanceof Date && !isNaN(val.getTime())) {
+            // Use UTC methods because SheetJS parses Excel serial dates as UTC midnight
+            const y = val.getUTCFullYear();
+            const m = String(val.getUTCMonth() + 1).padStart(2, '0');
+            const d = String(val.getUTCDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        if (typeof val === 'number' && val > 20000 && val < 100000) {
+            // Excel serial date conversion
+            const utcDays = Math.floor(val - 25569);
+            const dateObj = new Date(utcDays * 86400 * 1000);
+            const y = dateObj.getUTCFullYear();
+            const m = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getUTCDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        const s = String(val).trim();
+        if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+            return s.substring(0, 10);
+        }
+        if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) {
+            const [dd, mm, yyyy] = s.substring(0, 10).split('/');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+        return '';
+    }
+
+    // Get min and max ISO dates for a given field ('criado_em', 'analise1_em', 'faturado_em')
+    function getMinMaxForField(field) {
+        const validDates = rawData.map(d => d[field]).filter(dt => dt && dt.length === 10).sort();
+        if (validDates.length === 0) return { min: '', max: '' };
+        return { min: validDates[0], max: validDates[validDates.length - 1] };
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        initCharts();
+        onDateTypeChange();
+    });
+
+    // Populate Mês Fechado dropdown dynamically from available months in the active date column
+    function populateMonthOptions(selectedField, preserveValue) {
+        const monthSelect = document.getElementById('filter-month');
+        if (!monthSelect) return;
+        const currentVal = preserveValue || monthSelect.value || 'ALL';
+        const monthSet = new Set();
+        rawData.forEach(d => {
+            const dt = d[selectedField];
+            if (dt && dt.length >= 7) {
+                monthSet.add(dt.substring(0, 7));
+            }
+        });
+        const sortedYMs = Array.from(monthSet).sort();
+        const fullNames = [
+            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ];
+        monthSelect.innerHTML = '<option value="ALL">Todos</option>' + sortedYMs.map(ym => {
+            const [y, m] = ym.split('-');
+            const label = `${fullNames[parseInt(m, 10) - 1]}/${y}`;
+            return `<option value="${ym}">${label}</option>`;
+        }).join('');
+
+        if (currentVal !== 'ALL' && sortedYMs.includes(currentVal)) {
+            monthSelect.value = currentVal;
+        } else {
+            monthSelect.value = 'ALL';
+        }
+    }
+
+    // When Mês Fechado changes, automatically set Início (1st day of month) and Fim (last calendar day of month, e.g. 31)
+    function onMonthFilterChange() {
+        const monthVal = document.getElementById('filter-month').value;
+        const selectedField = 'criado_em';
+
+        if (monthVal === 'ALL') {
+            const range = getMinMaxForField(selectedField);
+            document.getElementById('filter-date-start').value = range.min;
+            document.getElementById('filter-date-end').value = range.max;
+        } else {
+            const [yearStr, monthStr] = monthVal.split('-');
+            const year = parseInt(yearStr, 10);
+            const month = parseInt(monthStr, 10);
+            const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+            document.getElementById('filter-date-start').value = `${yearStr}-${monthStr}-01`;
+            document.getElementById('filter-date-end').value = `${yearStr}-${monthStr}-${String(lastDay).padStart(2, '0')}`;
+        }
+        applyFilters();
+    }
+
+    // If user manually edits Início or Fim dates, sync Mês Fechado dropdown if it matches a full month or set to ALL
+    function onManualDateChange() {
+        const dStart = document.getElementById('filter-date-start').value;
+        const dEnd = document.getElementById('filter-date-end').value;
+        const monthSelect = document.getElementById('filter-month');
+        if (monthSelect && dStart && dEnd && dStart.substring(0, 7) === dEnd.substring(0, 7)) {
+            const ym = dStart.substring(0, 7);
+            const [y, m] = ym.split('-');
+            const lastDay = String(new Date(Date.UTC(parseInt(y, 10), parseInt(m, 10), 0)).getUTCDate()).padStart(2, '0');
+            if (dStart === `${ym}-01` && dEnd === `${ym}-${lastDay}`) {
+                const optExists = Array.from(monthSelect.options).some(o => o.value === ym);
+                monthSelect.value = optExists ? ym : 'ALL';
+            } else {
+                monthSelect.value = 'ALL';
+            }
+        } else if (monthSelect) {
+            monthSelect.value = 'ALL';
+        }
+        applyFilters();
+    }
+
+    // Initialize/refresh Mês Fechado options and date range using Column G (criado_em)
+    function onDateTypeChange() {
+        populateMonthOptions('criado_em');
+        onMonthFilterChange();
+    }
+
+    // DYNAMIC FILE UPLOAD HANDLER VIA SHEETJS
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                
+                // Prefer 'Consolidado' sheet if available, otherwise first sheet
+                const targetSheetName = workbook.SheetNames.find(s => normStr(s) === 'consolidado') || workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[targetSheetName];
+                const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                if (jsonRows.length < 2) {
+                    alert("A planilha enviada parece estar vazia.");
+                    return;
+                }
+
+                const headers = jsonRows[0].map(normStr);
+                
+                let colID = headers.findIndex(h => h === 'ticket' || h.includes('id') || h.includes('chamado'));
+                let colPedido = headers.findIndex(h => h.includes('pedido'));
+                let colAssunto = headers.findIndex(h => h.includes('assunto'));
+                let colEquipe = headers.findIndex(h => h.includes('equipe'));
+                let colVendedor = headers.findIndex(h => h.includes('vendedor') || h.includes('cliente'));
+                let colSLA = headers.findIndex(h => h.includes('sla'));
+                let colCriado = headers.findIndex(h => h === 'criado' || h.includes('criado') || h.includes('abertura'));
+                let colTotal = headers.findIndex(h => h.includes('numero de analises') || h.includes('total de analises') || h.includes('analises'));
+                let colD1 = headers.findIndex(h => h.includes('data 1') || h === 'data 1a analise');
+                let colFat = headers.findIndex(h => h.includes('data faturamento') || h.includes('liberacao') || h === 'data faturamento');
+                let colDias1a = headers.findIndex(h => h.includes('dias ticket - 1') || h.includes('dias ticket 1'));
+                let colDiasFat = headers.findIndex(h => h.includes('dias ticket - fat') || h.includes('dias ticket fat') || h.includes('aguardando ajuste'));
+                let colComentarios = headers.findIndex(h => h.includes('comentario') || h.includes('motivo'));
+
+                if (colID === -1) colID = 0;
+                if (colCriado === -1) colCriado = 6;
+                if (colTotal === -1) colTotal = 7;
+                if (colD1 === -1) colD1 = 8;
+                if (colFat === -1) colFat = 9;
+                if (colDias1a === -1) colDias1a = 10;
+                if (colDiasFat === -1) colDiasFat = 11;
+                if (colComentarios === -1) colComentarios = 12;
+
+                const newRawData = [];
+                const seenTicketIDs = new Set();
+
+                for (let i = 1; i < jsonRows.length; i++) {
+                    const row = jsonRows[i];
+                    if (!row || row.length === 0) continue;
+
+                    const rawId = row[colID];
+                    if (rawId === undefined || rawId === null || String(rawId).trim() === '') continue;
+                    const tID = String(rawId).trim();
+
+                    // Deduplicate by Ticket ID
+                    if (seenTicketIDs.has(tID)) continue;
+                    seenTicketIDs.add(tID);
+
+                    let numAnalises = parseFloat(row[colTotal]);
+                    if (isNaN(numAnalises)) numAnalises = 0;
+
+                    const criadoVal = parseExcelDateToISO(row[colCriado]);
+                    const analise1Val = parseExcelDateToISO(row[colD1]);
+                    const fatVal = parseExcelDateToISO(row[colFat]);
+                    const comentariosVal = colComentarios !== -1 && row[colComentarios] ? String(row[colComentarios]).trim() : '';
+
+                    let dias1aVal = colDias1a !== -1 ? parseFloat(row[colDias1a]) : NaN;
+                    if (isNaN(dias1aVal)) {
+                        if (criadoVal && analise1Val) {
+                            const dtC = new Date(criadoVal + 'T00:00:00Z');
+                            const dtA = new Date(analise1Val + 'T00:00:00Z');
+                            dias1aVal = Math.round((dtA - dtC) / 86400000);
+                        } else {
+                            dias1aVal = null;
+                        }
+                    }
+
+                    let diasAjusteVal = colDiasFat !== -1 ? parseFloat(row[colDiasFat]) : NaN;
+                    if (isNaN(diasAjusteVal)) {
+                        if (analise1Val && fatVal) {
+                            const dtA = new Date(analise1Val + 'T00:00:00Z');
+                            const dtF = new Date(fatVal + 'T00:00:00Z');
+                            diasAjusteVal = Math.round((dtF - dtA) / 86400000);
+                        } else {
+                            diasAjusteVal = null;
+                        }
+                    }
+
+                    newRawData.push({
+                        id: tID,
+                        pedido: colPedido !== -1 && row[colPedido] ? String(row[colPedido]).trim() : '',
+                        assunto: colAssunto !== -1 && row[colAssunto] ? String(row[colAssunto]).trim() : '',
+                        equipe: colEquipe !== -1 && row[colEquipe] ? String(row[colEquipe]).trim() : '',
+                        vendedor: colVendedor !== -1 && row[colVendedor] ? String(row[colVendedor]).trim() : '',
+                        sla: colSLA !== -1 && row[colSLA] ? String(row[colSLA]).trim() : '',
+                        criado_em: criadoVal,
+                        analise1_em: analise1Val,
+                        faturado_em: fatVal,
+                        analises: numAnalises,
+                        dias_1a: dias1aVal,
+                        dias_ajuste: diasAjusteVal,
+                        comentarios: comentariosVal,
+                        motivos: parseReasonsFromComment(comentariosVal)
+                    });
+                }
+
+                if (newRawData.length > 0) {
+                    rawData = newRawData;
+                    document.getElementById('source-file-name').innerText = `${file.name} (${targetSheetName})`;
+                    onDateTypeChange();
+                    alert(`Planilha "${file.name}" carregada com sucesso! (${rawData.length} tickets únicos processados)`);
+                } else {
+                    alert("Não foram encontrados registros válidos na planilha enviada.");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Erro ao ler a planilha Excel. Verifique se o formato está correto (.xlsx).");
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function initCharts() {
+        if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+            Chart.register(ChartDataLabels);
+        }
+
+        // CHART 1: DISTRIBUIÇÃO DE LIBERAÇÕES
+        const elDist = document.getElementById('chartAnalisesDist');
+        if (!elDist) return;
+        const ctxDist = elDist.getContext('2d');
+        chartDist = new Chart(ctxDist, {
+            type: 'bar',
+            data: {
+                labels: ['1ª análise', '2ª análise', '3ª análise', '4+ análises'],
+                datasets: [{
+                    label: 'Pedidos',
+                    data: [62, 96, 16, 1],
+                    backgroundColor: ['#10B981', '#0066CC', '#F59E0B', '#EF4444'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top',
+                        formatter: (val, ctx) => {
+                            const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            const pct = sum > 0 ? ((val / sum) * 100).toFixed(1) : '0.0';
+                            return `${val} (${pct}%)`;
+                        },
+                        font: { weight: 'bold', size: 11 },
+                        color: '#1E293B'
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grace: '15%' }
+                }
+            }
+        });
+
+        // CHART 2: MOTIVOS
+        const ctxMotivos = document.getElementById('chartMotivos').getContext('2d');
+        chartMotivos = new Chart(ctxMotivos, {
+            type: 'bar',
+            indexAxis: 'y',
+            data: {
+                labels: ALL_REASON_CATEGORIES,
+                datasets: [{
+                    data: [56, 8, 19, 18, 4, 53],
+                    backgroundColor: ['#EF4444', '#F59E0B', '#0066CC', '#3B82F6', '#64748B', '#DC2626'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'right',
+                        formatter: (val, ctx) => {
+                            const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            const pct = sum > 0 ? ((val / sum) * 100).toFixed(1) : '0.0';
+                            return `${val} (${pct}%)`;
+                        },
+                        font: { weight: 'bold', size: 11 },
+                        color: '#1E293B'
+                    }
+                },
+                scales: {
+                    x: { beginAtZero: true, grace: '18%' }
+                }
+            }
+        });
+    }
+
+    function applyFilters() {
+        const dStart = document.getElementById('filter-date-start').value;
+        const dEnd = document.getElementById('filter-date-end').value;
+
+        const roundsVal = document.getElementById('filter-rounds').value;
+        const reasonVal = document.getElementById('filter-reason').value;
+
+        const activeDateField = 'criado_em';
+
+        let filteredTickets = [...rawData];
+
+        // 1. Filter by selected TIPO DE FILTRO date column + DATA range
+        if (dStart || dEnd) {
+            filteredTickets = filteredTickets.filter(d => {
+                const dateStr = d[activeDateField];
+                if (!dateStr) return false;
+                if (dStart && dateStr < dStart) return false;
+                if (dEnd && dateStr > dEnd) return false;
+                return true;
+            });
+        }
+
+        // 2. Rounds filter (Número de Análises)
+        if (roundsVal !== 'ALL') {
+            if (roundsVal === '4') {
+                filteredTickets = filteredTickets.filter(d => d.analises >= 4);
+            } else {
+                filteredTickets = filteredTickets.filter(d => d.analises === parseFloat(roundsVal));
+            }
+        }
+
+        // 3. Reason filter (Motivo da reprovação - Coluna M)
+        if (reasonVal !== 'ALL') {
+            filteredTickets = filteredTickets.filter(d => {
+                const ticketReasons = (d.motivos && d.motivos.length > 0)
+                    ? d.motivos
+                    : parseReasonsFromComment(d.comentarios);
+                return ticketReasons.includes(reasonVal);
+            });
+        }
+
+        // Total count of unique tickets
+        const totalUniqueTickets = filteredTickets.length;
+        document.getElementById('filtered-tickets-count').innerText = totalUniqueTickets;
+        document.getElementById('kpi-tickets').innerText = totalUniqueTickets;
+
+        // Total analyses performed = Sum of Número de Análises
+        const sumAnalyses = filteredTickets.reduce((acc, curr) => acc + (curr.analises || 0), 0);
+        document.getElementById('kpi-analises').innerText = sumAnalyses;
+
+        // Average analyses per ticket
+        const avg = totalUniqueTickets > 0 ? (sumAnalyses / totalUniqueTickets).toFixed(2) : '0.00';
+        document.getElementById('kpi-media').innerText = avg;
+
+        // Approval in 1st Analysis (Número de Análises === 1)
+        const aprov1 = filteredTickets.filter(d => d.analises === 1).length;
+        const pct1 = totalUniqueTickets > 0 ? ((aprov1 / totalUniqueTickets) * 100).toFixed(1) : '0.0';
+        document.getElementById('kpi-aprov1').innerText = `${pct1}%`;
+        document.getElementById('kpi-aprov1-count').innerText = `(${aprov1} tickets)`;
+
+        // Pedidos Devolvidos (Coluna H: 2, 3, 4, 5 ou mais)
+        const rework = filteredTickets.filter(d => d.analises >= 2).length;
+        const pctRework = totalUniqueTickets > 0 ? ((rework / totalUniqueTickets) * 100).toFixed(1) : '0.0';
+        document.getElementById('kpi-retrabalho').innerText = `${pctRework}%`;
+        document.getElementById('kpi-retrabalho-count').innerText = `(${rework} tickets)`;
+
+        // Tempo Médio Abertura de Ticket x 1ª Análise (Média da Coluna K)
+        const validDias1a = filteredTickets.filter(d => d.dias_1a !== null && d.dias_1a !== undefined && !isNaN(d.dias_1a));
+        const avgDias1a = validDias1a.length > 0
+            ? (validDias1a.reduce((acc, curr) => acc + Number(curr.dias_1a), 0) / validDias1a.length).toFixed(2)
+            : '0.00';
+        if (document.getElementById('kpi-tempo-1a')) {
+            document.getElementById('kpi-tempo-1a').innerText = `${avgDias1a} dias`;
+        }
+
+        // Tempo Médio de Ajuste do Pedido (Data Faturamento [Col J] - Data 1ª Análise [Col I])
+        const validDiasAjuste = filteredTickets.filter(d => d.dias_ajuste !== null && d.dias_ajuste !== undefined && !isNaN(d.dias_ajuste));
+        const avgDiasAjuste = validDiasAjuste.length > 0
+            ? (validDiasAjuste.reduce((acc, curr) => acc + Number(curr.dias_ajuste), 0) / validDiasAjuste.length).toFixed(2)
+            : '0.00';
+        if (document.getElementById('kpi-tempo-ajuste')) {
+            document.getElementById('kpi-tempo-ajuste').innerText = `${avgDiasAjuste} dias`;
+        }
+
+        // Distribution by rounds
+        const dist1 = filteredTickets.filter(d => d.analises === 1).length;
+        const dist2 = filteredTickets.filter(d => d.analises === 2).length;
+        const dist3 = filteredTickets.filter(d => d.analises === 3).length;
+        const dist4 = filteredTickets.filter(d => d.analises >= 4).length;
+
+        if (chartDist) {
+            chartDist.data.datasets[0].data = [dist1, dist2, dist3, dist4];
+            chartDist.update();
+        }
+
+        // Rejection reasons counting (each comma-separated phrase = 1 reason occurrence)
+        const reasonCounts = {};
+        const matrixCounts = {};
+        ALL_REASON_CATEGORIES.forEach(cat => {
+            reasonCounts[cat] = 0;
+            matrixCounts[cat] = { r1: 0, r2: 0, r3: 0, r4: 0 };
+        });
+
+        filteredTickets.forEach(d => {
+            const ticketReasons = (d.motivos && d.motivos.length > 0)
+                ? d.motivos
+                : parseReasonsFromComment(d.comentarios);
+            ticketReasons.forEach(cat => {
+                if (reasonCounts[cat] === undefined) {
+                    reasonCounts[cat] = 0;
+                    matrixCounts[cat] = { r1: 0, r2: 0, r3: 0, r4: 0 };
+                }
+                reasonCounts[cat]++;
+                if (d.analises === 1) matrixCounts[cat].r1++;
+                else if (d.analises === 2) matrixCounts[cat].r2++;
+                else if (d.analises === 3) matrixCounts[cat].r3++;
+                else if (d.analises >= 4) matrixCounts[cat].r4++;
+            });
+        });
+
+        const sortedReasons = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1]);
+        const totalRejections = sortedReasons.reduce((acc, [, cnt]) => acc + cnt, 0);
+
+        if (chartMotivos) {
+            chartMotivos.data.labels = sortedReasons.map(([name]) => name);
+            chartMotivos.data.datasets[0].data = sortedReasons.map(([, cnt]) => cnt);
+            chartMotivos.update();
+        }
+
+        // Update Quadro Central: Motivos de Devolução (1 motivo por linha devolvida, pelo critério de gravidade)
+        const returnedTicketsList = filteredTickets.filter(d => d.analises >= 2);
+        const returnedReasonCounts = {};
+        ALL_REASON_CATEGORIES.forEach(cat => { returnedReasonCounts[cat] = 0; });
+
+        returnedTicketsList.forEach(d => {
+            const ticketReasons = (d.motivos && d.motivos.length > 0)
+                ? d.motivos
+                : parseReasonsFromComment(d.comentarios);
+            if (ticketReasons.length === 0) return;
+
+            // Seleciona apenas 1 motivo por linha seguindo a ordem de gravidade (1º mais grave ao 6º menos grave)
+            let chosenReason = null;
+            for (const sevCat of ALL_REASON_CATEGORIES) {
+                if (ticketReasons.includes(sevCat)) {
+                    chosenReason = sevCat;
+                    break;
+                }
+            }
+            if (!chosenReason) chosenReason = ticketReasons[0];
+
+            if (returnedReasonCounts[chosenReason] === undefined) {
+                returnedReasonCounts[chosenReason] = 0;
+            }
+            returnedReasonCounts[chosenReason]++;
+        });
+
+        const orderedReturnedReasons = ALL_REASON_CATEGORIES.map(cat => [cat, returnedReasonCounts[cat] || 0]);
+        Object.entries(returnedReasonCounts).forEach(([cat, cnt]) => {
+            if (!ALL_REASON_CATEGORIES.includes(cat)) orderedReturnedReasons.push([cat, cnt]);
+        });
+        const maxReturnedCount = Math.max(...orderedReturnedReasons.map(([, cnt]) => cnt), 0);
+        const totalReturnedCounted = orderedReturnedReasons.reduce((acc, [, cnt]) => acc + cnt, 0);
+
+        const motivosDevListEl = document.getElementById('kpi-motivos-devolucao-list');
+        if (motivosDevListEl) {
+            motivosDevListEl.innerHTML = orderedReturnedReasons.map(([name, cnt]) => {
+                const badgeClass = cnt > 0 && cnt === maxReturnedCount ? 'tag-danger' : (cnt > 0 ? 'tag-warning' : 'tag-neutral');
+                return `
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #F1F5F9; padding-bottom:4px; gap:8px;">
+                        <span style="color:var(--text-main); font-weight:500;">${name}</span>
+                        <span class="tag ${badgeClass}">${cnt}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+        const motivosDevSubEl = document.getElementById('kpi-motivos-devolucao-sub');
+        if (motivosDevSubEl) {
+            motivosDevSubEl.innerText = `${totalReturnedCounted} de ${returnedTicketsList.length} pedidos devolvidos (1 motivo principal por pedido conforme gravidade)`;
+        }
+
+        // Update Motivos Subtitle & Main Reason Card
+        const ticketsWithReasons = filteredTickets.filter(d => (d.motivos && d.motivos.length > 0) || parseReasonsFromComment(d.comentarios).length > 0).length;
+        if (document.getElementById('motivos-subtitle')) {
+            document.getElementById('motivos-subtitle').innerText = `${totalRejections} Ocorrências em ${ticketsWithReasons} Pedidos`;
+        }
+
+        const topReason = sortedReasons.length > 0 && sortedReasons[0][1] > 0 ? sortedReasons[0] : ['Nenhum motivo registrado', 0];
+        if (document.getElementById('main-reason-title')) {
+            document.getElementById('main-reason-title').innerText = topReason[0];
+        }
+        if (document.getElementById('main-reason-count-text')) {
+            const pctTop = totalRejections > 0 ? ((topReason[1] / totalRejections) * 100).toFixed(1) : '0.0';
+            document.getElementById('main-reason-count-text').innerText = `${topReason[1]} ocorrências — ${pctTop}% das reprovações`;
+        }
+        if (document.getElementById('tbl-ret-main-reason')) {
+            document.getElementById('tbl-ret-main-reason').innerText = topReason[0];
+        }
+
+        // Update Top 3 Table
+        const top3Tbody = document.getElementById('top3-tbody');
+        if (top3Tbody) {
+            const top3 = sortedReasons.slice(0, 3);
+            let top3Sum = 0;
+            top3Tbody.innerHTML = top3.map(([name, cnt], idx) => {
+                top3Sum += cnt;
+                const pct = totalRejections > 0 ? ((cnt / totalRejections) * 100).toFixed(1) : '0.0';
+                const tagClass = idx === 0 && cnt > 0 ? 'tag-danger' : (cnt > 0 ? 'tag-warning' : 'tag-neutral');
+                return `
+                    <tr>
+                        <td><strong>${name}</strong></td>
+                        <td><span class="tag ${tagClass}">${cnt}</span></td>
+                        <td>${pct}%</td>
+                    </tr>
+                `;
+            }).join('');
+            const top3PctTotal = totalRejections > 0 ? ((top3Sum / totalRejections) * 100).toFixed(1) : '0.0';
+            if (document.getElementById('top3-interp-box')) {
+                document.getElementById('top3-interp-box').innerHTML = `Os 3 principais motivos representam <strong>${top3PctTotal}% das reprovações</strong> observadas.`;
+            }
+        }
+
+        // Update Matrix Table
+        const matrixTbody = document.getElementById('matrix-tbody');
+        if (matrixTbody) {
+            matrixTbody.innerHTML = sortedReasons.map(([name]) => {
+                const m = matrixCounts[name] || { r1: 0, r2: 0, r3: 0, r4: 0 };
+                return `
+                    <tr>
+                        <td>${name}</td>
+                        <td>${m.r1}</td>
+                        <td>${m.r2}</td>
+                        <td>${m.r3}</td>
+                        <td>${m.r4}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Helper: last business day (Mon-Fri) of a given YYYY-MM month
+        function getLastBusinessDayOfMonth(ym) {
+            const [yearStr, monthStr] = ym.split('-');
+            const year = parseInt(yearStr, 10);
+            const month = parseInt(monthStr, 10);
+            const dt = new Date(Date.UTC(year, month, 0)); // last calendar day of month
+            while (dt.getUTCDay() === 0 || dt.getUTCDay() === 6) {
+                dt.setUTCDate(dt.getUTCDate() - 1);
+            }
+            const y = dt.getUTCFullYear();
+            const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+            const d = String(dt.getUTCDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function formatMonthLabel(ym) {
+            const names = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const [y, m] = ym.split('-');
+            return `${names[parseInt(m, 10) - 1]}/${y}`;
+        }
+
+        // Closing Section Calculations (last business day of each month)
+        const monthClosingDates = new Set();
+        ['criado_em', 'analise1_em', 'faturado_em'].forEach(field => {
+            filteredTickets.forEach(d => {
+                const dt = d[field];
+                if (dt && dt.length === 10) {
+                    monthClosingDates.add(getLastBusinessDayOfMonth(dt.substring(0, 7)));
+                }
+            });
+        });
+
+        // Group filtered tickets by creation month (criado_em) for monthly closing % breakdown
+        const openByMonth = {};
+        filteredTickets.forEach(d => {
+            if (d.criado_em && d.criado_em.length === 10) {
+                const ym = d.criado_em.substring(0, 7);
+                const lastBDay = getLastBusinessDayOfMonth(ym);
+                if (!openByMonth[ym]) {
+                    openByMonth[ym] = { total: 0, closing: 0, closingReturned: 0, closingInvoiced: 0, lastBDay };
+                }
+                openByMonth[ym].total++;
+                if (d.criado_em === lastBDay) {
+                    openByMonth[ym].closing++;
+                    if ((d.analises || 0) >= 2) {
+                        openByMonth[ym].closingReturned++;
+                    }
+                }
+                if (d.faturado_em && d.faturado_em.length === 10 && monthClosingDates.has(d.faturado_em)) {
+                    openByMonth[ym].closingInvoiced++;
+                }
+            }
+        });
+
+        const sortedMonths = Object.keys(openByMonth).sort();
+        const closingOpen = sortedMonths.reduce((acc, ym) => acc + openByMonth[ym].closing, 0);
+        const closingReturned = sortedMonths.reduce((acc, ym) => acc + openByMonth[ym].closingReturned, 0);
+        const closingInvoiced = sortedMonths.reduce((acc, ym) => acc + openByMonth[ym].closingInvoiced, 0);
+        const totalOpenForPct = sortedMonths.reduce((acc, ym) => acc + openByMonth[ym].total, 0);
+        const closingOpenPct = totalOpenForPct > 0 ? ((closingOpen / totalOpenForPct) * 100).toFixed(1) : '0.0';
+        const closingReturnedPct = closingOpen > 0 ? ((closingReturned / closingOpen) * 100).toFixed(1) : '0.0';
+        const closingInvoicedPct = totalOpenForPct > 0 ? ((closingInvoiced / totalOpenForPct) * 100).toFixed(1) : '0.0';
+
+        if (document.getElementById('closing-open-val')) {
+            document.getElementById('closing-open-val').innerText = `${closingOpen} tickets (${closingOpenPct}%)`;
+        }
+
+        const closingMonthlyEl = document.getElementById('closing-open-monthly');
+        if (closingMonthlyEl) {
+            if (sortedMonths.length === 0) {
+                closingMonthlyEl.innerHTML = 'Nenhum ticket aberto no período selecionado.';
+            } else if (sortedMonths.length === 1) {
+                const ym = sortedMonths[0];
+                const info = openByMonth[ym];
+                const pctM = info.total > 0 ? ((info.closing / info.total) * 100).toFixed(1) : '0.0';
+                const dayFmt = info.lastBDay.split('-').slice(1).reverse().join('/');
+                closingMonthlyEl.innerHTML = `<strong>${pctM}%</strong> dos tickets abertos em <strong>${formatMonthLabel(ym)}</strong> (${info.closing} de ${info.total}) ocorreram no fechamento (${dayFmt}).`;
+            } else {
+                closingMonthlyEl.innerHTML = sortedMonths.map((ym, i) => {
+                    const info = openByMonth[ym];
+                    const pctM = info.total > 0 ? ((info.closing / info.total) * 100).toFixed(1) : '0.0';
+                    const dayFmt = info.lastBDay.split('-').slice(1).reverse().join('/');
+                    const mb = i < sortedMonths.length - 1 ? 'margin-bottom:4px;' : '';
+                    return `<div style="display:flex; justify-content:space-between; ${mb}"><span><strong>${formatMonthLabel(ym)}</strong> (${dayFmt}):</span><span><strong>${pctM}%</strong> (${info.closing} de ${info.total})</span></div>`;
+                }).join('');
+            }
+        }
+
+        if (document.getElementById('closing-released-val')) {
+            document.getElementById('closing-released-val').innerText = `${closingReturned} tickets (${closingReturnedPct}%)`;
+        }
+
+        const closingReturnedMonthlyEl = document.getElementById('closing-returned-monthly');
+        if (closingReturnedMonthlyEl) {
+            if (sortedMonths.length === 0) {
+                closingReturnedMonthlyEl.innerHTML = 'Nenhum ticket aberto no período selecionado.';
+            } else if (sortedMonths.length === 1) {
+                const ym = sortedMonths[0];
+                const info = openByMonth[ym];
+                const pctR = info.closing > 0 ? ((info.closingReturned / info.closing) * 100).toFixed(1) : '0.0';
+                const dayFmt = info.lastBDay.split('-').slice(1).reverse().join('/');
+                closingReturnedMonthlyEl.innerHTML = `<strong>${pctR}%</strong> dos tickets abertos no fechamento de <strong>${formatMonthLabel(ym)}</strong> (${info.closingReturned} de ${info.closing}) tiveram 2 ou mais análises (${dayFmt}).`;
+            } else {
+                closingReturnedMonthlyEl.innerHTML = sortedMonths.map((ym, i) => {
+                    const info = openByMonth[ym];
+                    const pctR = info.closing > 0 ? ((info.closingReturned / info.closing) * 100).toFixed(1) : '0.0';
+                    const dayFmt = info.lastBDay.split('-').slice(1).reverse().join('/');
+                    const mb = i < sortedMonths.length - 1 ? 'margin-bottom:4px;' : '';
+                    return `<div style="display:flex; justify-content:space-between; ${mb}"><span><strong>${formatMonthLabel(ym)}</strong> (${dayFmt}):</span><span><strong>${pctR}%</strong> (${info.closingReturned} de ${info.closing})</span></div>`;
+                }).join('');
+            }
+        }
+        if (document.getElementById('closing-analyses-val')) {
+            document.getElementById('closing-analyses-val').innerText = `${closingInvoiced} tickets (${closingInvoicedPct}%)`;
+        }
+
+        const closingInvoicedMonthlyEl = document.getElementById('closing-invoiced-monthly');
+        if (closingInvoicedMonthlyEl) {
+            if (sortedMonths.length === 0) {
+                closingInvoicedMonthlyEl.innerHTML = 'Nenhum ticket aberto no período selecionado.';
+            } else if (sortedMonths.length === 1) {
+                const ym = sortedMonths[0];
+                const info = openByMonth[ym];
+                const pctI = info.total > 0 ? ((info.closingInvoiced / info.total) * 100).toFixed(1) : '0.0';
+                const dayFmt = info.lastBDay.split('-').slice(1).reverse().join('/');
+                closingInvoicedMonthlyEl.innerHTML = `<strong>${pctI}%</strong> dos tickets abertos em <strong>${formatMonthLabel(ym)}</strong> (${info.closingInvoiced} de ${info.total}) foram faturados no fechamento (${dayFmt}).`;
+            } else {
+                closingInvoicedMonthlyEl.innerHTML = sortedMonths.map((ym, i) => {
+                    const info = openByMonth[ym];
+                    const pctI = info.total > 0 ? ((info.closingInvoiced / info.total) * 100).toFixed(1) : '0.0';
+                    const dayFmt = info.lastBDay.split('-').slice(1).reverse().join('/');
+                    const mb = i < sortedMonths.length - 1 ? 'margin-bottom:4px;' : '';
+                    return `<div style="display:flex; justify-content:space-between; ${mb}"><span><strong>${formatMonthLabel(ym)}</strong> (${dayFmt}):</span><span><strong>${pctI}%</strong> (${info.closingInvoiced} de ${info.total})</span></div>`;
+                }).join('');
+            }
+        }
+
+        // Update Interpretation Text
+        if (document.getElementById('dist-interp-box')) {
+            document.getElementById('dist-interp-box').innerHTML = `<strong>Interpretação Automática:</strong> <strong>${pct1}% (${aprov1} pedidos)</strong> foram liberados na primeira análise, enquanto <strong>${pctRework}% (${rework} pedidos)</strong> necessitaram de duas ou mais análises.`;
+        }
+
+        // Update Rework Table
+        if (document.getElementById('tbl-ret-pct-1')) document.getElementById('tbl-ret-pct-1').innerText = `${pct1}%`;
+        if (document.getElementById('tbl-ret-pct-2')) document.getElementById('tbl-ret-pct-2').innerText = `${totalUniqueTickets > 0 ? ((dist2/totalUniqueTickets)*100).toFixed(1) : '0.0'}%`;
+        if (document.getElementById('tbl-ret-pct-3')) document.getElementById('tbl-ret-pct-3').innerText = `${totalUniqueTickets > 0 ? ((dist3/totalUniqueTickets)*100).toFixed(1) : '0.0'}%`;
+        if (document.getElementById('tbl-ret-pct-4')) document.getElementById('tbl-ret-pct-4').innerText = `${totalUniqueTickets > 0 ? ((dist4/totalUniqueTickets)*100).toFixed(1) : '0.0'}%`;
+        if (document.getElementById('tbl-ret-avg')) document.getElementById('tbl-ret-avg').innerText = `${avg} análises`;
+        if (document.getElementById('tbl-ret-total-rejections')) document.getElementById('tbl-ret-total-rejections').innerText = `${totalRejections} ocorrências`;
+        if (document.getElementById('challenge-rework-pct')) document.getElementById('challenge-rework-pct').innerText = `${pctRework}%`;
+
+        // Update Insights Text Dynamically
+        if (document.getElementById('insight-body-1')) document.getElementById('insight-body-1').innerText = `Durante o período analisado, foram recebidos ${totalUniqueTickets} tickets de faturamento e realizadas ${sumAnalyses} análises contratuais.`;
+        if (document.getElementById('insight-body-2')) document.getElementById('insight-body-2').innerText = `${pct1}% (${aprov1} pedidos) foram liberados diretamente na primeira análise.`;
+        if (document.getElementById('insight-body-3')) document.getElementById('insight-body-3').innerText = `${pctRework}% (${rework} pedidos) necessitaram de duas ou mais análises, gerando uma média de ${avg} análises por ticket.`;
+        if (document.getElementById('insight-body-4')) {
+            const top3SumInsights = sortedReasons.slice(0, 3).reduce((acc, [, cnt]) => acc + cnt, 0);
+            const top3PctInsights = totalRejections > 0 ? ((top3SumInsights / totalRejections) * 100).toFixed(1) : '0.0';
+            document.getElementById('insight-body-4').innerText = `Os 3 principais motivos representam ${top3PctInsights}% das ${totalRejections} ocorrências de reprovação registradas.`;
+        }
+
+        // Update Top 10 Ranking Table dynamically
+        const top10TbodyEl = document.getElementById('top10-ranking-tbody');
+        if (top10TbodyEl) {
+            const fmtDateBR = (iso) => (iso && iso.length === 10) ? iso.split('-').reverse().join('/') : '—';
+            const rankedTickets = [...filteredTickets]
+                .filter(d => d.dias_ajuste !== null && d.dias_ajuste !== undefined && !isNaN(d.dias_ajuste))
+                .sort((a, b) => {
+                    if (b.dias_ajuste !== a.dias_ajuste) return b.dias_ajuste - a.dias_ajuste;
+                    return (a.criado_em || '').localeCompare(b.criado_em || '');
+                })
+                .slice(0, 10);
+
+            if (rankedTickets.length === 0) {
+                top10TbodyEl.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Nenhum pedido encontrado no recorte atual.</td></tr>';
+            } else {
+                top10TbodyEl.innerHTML = rankedTickets.map((d, idx) => {
+                    const diasVal = Number(d.dias_ajuste);
+                    const tagClass = diasVal >= 10 ? 'tag-danger' : (diasVal >= 5 ? 'tag-warning' : 'tag-neutral');
+                    const diasLabel = `${diasVal} ${diasVal === 1 ? 'dia' : 'dias'}`;
+                    const motivoTxt = d.comentarios && d.comentarios.trim() !== '' ? d.comentarios : '—';
+                    return `
+                        <tr>
+                            <td><strong>${idx + 1}º</strong></td>
+                            <td>${d.id}</td>
+                            <td><strong>${d.pedido || '—'}</strong></td>
+                            <td>${d.vendedor || '—'}</td>
+                            <td>${fmtDateBR(d.criado_em)}</td>
+                            <td>${fmtDateBR(d.analise1_em)}</td>
+                            <td>${fmtDateBR(d.faturado_em)}</td>
+                            <td><span class="tag ${tagClass}">${diasLabel}</span></td>
+                            <td>${motivoTxt}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Update Vendor Ranking Table dynamically
+        const vendorTbodyEl = document.getElementById('vendor-ranking-tbody');
+        if (vendorTbodyEl) {
+            const vendorMap = {};
+            filteredTickets.forEach(d => {
+                const vend = (d.vendedor && String(d.vendedor).trim() !== '') ? String(d.vendedor).trim() : 'Não informado';
+                if (!vendorMap[vend]) {
+                    vendorMap[vend] = {
+                        vendedor: vend,
+                        tickets: 0,
+                        fechamento: 0,
+                        maisAnalises: 0,
+                        somaAjuste: 0,
+                        qtdAjuste: 0
+                    };
+                }
+                vendorMap[vend].tickets++;
+                if (d.criado_em && d.criado_em.length === 10) {
+                    const lastBDay = getLastBusinessDayOfMonth(d.criado_em.substring(0, 7));
+                    if (d.criado_em === lastBDay) {
+                        vendorMap[vend].fechamento++;
+                    }
+                }
+                if ((d.analises || 0) >= 2) {
+                    vendorMap[vend].maisAnalises++;
+                }
+                if (d.dias_ajuste !== null && d.dias_ajuste !== undefined && !isNaN(d.dias_ajuste)) {
+                    vendorMap[vend].somaAjuste += Number(d.dias_ajuste);
+                    vendorMap[vend].qtdAjuste++;
+                }
+            });
+
+            const sortedVendors = Object.values(vendorMap).sort((a, b) => {
+                if (b.tickets !== a.tickets) return b.tickets - a.tickets;
+                if (b.maisAnalises !== a.maisAnalises) return b.maisAnalises - a.maisAnalises;
+                return a.vendedor.localeCompare(b.vendedor, 'pt-BR');
+            });
+
+            const vendorSubEl = document.getElementById('vendor-ranking-subtitle');
+            if (vendorSubEl) {
+                vendorSubEl.innerText = `${sortedVendors.length} ${sortedVendors.length === 1 ? 'vendedor' : 'vendedores'} · ${totalUniqueTickets} tickets no recorte atual`;
+            }
+
+            if (sortedVendors.length === 0) {
+                vendorTbodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Nenhum pedido encontrado no recorte atual.</td></tr>';
+            } else {
+                vendorTbodyEl.innerHTML = sortedVendors.map((v, idx) => {
+                    const foraFechamento = v.tickets - v.fechamento;
+                    const pctFora = v.tickets > 0 ? ((foraFechamento / v.tickets) * 100).toFixed(1) : '0.0';
+                    const pctFech = v.tickets > 0 ? ((v.fechamento / v.tickets) * 100).toFixed(1) : '0.0';
+                    const pctMais = v.tickets > 0 ? ((v.maisAnalises / v.tickets) * 100).toFixed(1) : '0.0';
+                    const avgAjuste = v.qtdAjuste > 0 ? (v.somaAjuste / v.qtdAjuste).toFixed(2) : '0.00';
+
+                    const fechTag = Number(pctFech) >= 40 && v.fechamento > 0 ? 'tag-danger' : (v.fechamento > 0 ? 'tag-warning' : 'tag-neutral');
+                    const maisTag = Number(pctMais) >= 75 && v.maisAnalises > 0 ? 'tag-danger' : (v.maisAnalises > 0 ? 'tag-warning' : 'tag-success');
+
+                    return `
+                        <tr>
+                            <td><strong>${idx + 1}º</strong></td>
+                            <td><strong>${v.vendedor}</strong></td>
+                            <td>${v.tickets}</td>
+                            <td>${foraFechamento} <span class="tag tag-neutral" style="margin-left:4px;">${pctFora}%</span></td>
+                            <td>${v.fechamento} <span class="tag ${fechTag}" style="margin-left:4px;">${pctFech}%</span></td>
+                            <td>${v.maisAnalises} <span class="tag ${maisTag}" style="margin-left:4px;">${pctMais}%</span></td>
+                            <td>${avgAjuste} dias</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Update Period Badge Display
+        if (rawData.length === 0) {
+            document.getElementById('period-display').innerText = `AGUARDANDO PLANILHA BASE`;
+        } else if (dStart && dEnd) {
+            const startFmt = dStart.split('-').reverse().join('/');
+            const endFmt = dEnd.split('-').reverse().join('/');
+            document.getElementById('period-display').innerText = `PERÍODO ANALISADO: ${startFmt} a ${endFmt}`;
+        } else {
+            document.getElementById('period-display').innerText = `PERÍODO ANALISADO: Todo o histórico`;
+        }
+    }
+
+    function resetFilters() {
+        if (document.getElementById('filter-month')) document.getElementById('filter-month').value = 'ALL';
+        document.getElementById('filter-rounds').value = 'ALL';
+        document.getElementById('filter-reason').value = 'ALL';
+        onDateTypeChange();
+    }
+</script>
+
+</body>
+</html>
